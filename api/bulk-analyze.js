@@ -1,0 +1,12 @@
+export const config = { maxDuration: 60 };
+const fields = ['searchIntent','contentSummary','missingTopics','missingEntities','missingDestinations','faqOpportunities','internalLinkOpportunities','freshnessIssues','eeatOpportunities','conversionOpportunities','improvedMetaTitle','improvedMetaDescription','suggestedHeadingImprovements','schemaRecommendations','priorityScore','recommendedAction'];
+const properties = Object.fromEntries(fields.map((f) => [f, { type: f === 'priorityScore' ? 'INTEGER' : 'STRING' }]));
+const SCHEMA = { type: 'OBJECT', properties, required: fields };
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*'); res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS'); res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end(); if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const key = process.env.GEMINI_API_KEY || ''; const d = req.body?.seoData; if (!key) return res.status(500).json({ error: 'Proxy is missing GEMINI_API_KEY' }); if (!d) return res.status(400).json({ error: 'SEO extracted data is required for analysis.' });
+  const prompt = `Act as a senior SEO strategist for a travel marketplace. Return actionable structured recommendations for search intent, summary, missing topics/entities/destinations, FAQs, internal links, freshness, E-E-A-T, conversion, metadata, headings, schema, priority 1-10 and recommended action.\nPAGE DATA:\n${JSON.stringify({ ...d, mainContent: (d.mainContent || '').slice(0, 12000) })}`;
+  try { const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(key)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(50000), body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, responseMimeType: 'application/json', responseSchema: SCHEMA } }) }); const data = await r.json(); if (!r.ok) return res.status(r.status === 429 ? 429 : 502).json({ error: data?.error?.message || `Gemini HTTP ${r.status}` }); const text = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join(''); return res.status(200).json({ success: true, recommendations: JSON.parse(text) }); }
+  catch (error) { return res.status(error?.name === 'TimeoutError' ? 504 : 500).json({ error: error?.message || 'SEO analysis failed' }); }
+}
