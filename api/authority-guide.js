@@ -3,13 +3,13 @@ export const config = { maxDuration: 60 };
 function buildPrompt(city) {
   return `You are an Elite Travel Editor, Local Historian, and Master Guide Writer for Travel Blueprint & Curated Editorial Archive (Level 9 Local Guide Authority).
 
-Write a complete, bespoke, deeply actionable destination travel guide for ${city}. Use current 2026 context where you are confident, and explicitly tell readers to verify time-sensitive prices, schedules, events, entry rules and closures.
+Write a complete, bespoke, deeply actionable destination travel guide for ${city}, approximately 1,800–2,400 words. Use current 2026 context where you are confident, and explicitly tell readers to verify time-sensitive prices, schedules, events, entry rules and closures.
 
 CRITICAL RULES:
 - Headings must be bespoke and evocative for ${city}; never use repetitive boilerplate headings.
 - FAQs must be specific questions travelers actually ask about ${city}.
 - Return the guide as clean semantic HTML only, without Markdown fences or commentary.
-- Use <h2> for the ten main sections, <h3> for subsections, neighborhoods, itinerary days and FAQ questions, <p> for prose, <ul>/<li> for lists, <blockquote> for editorial callouts and <strong> for labels.
+- Use <h2> for the ten main sections, <h3> for subsections, neighborhoods, itinerary days and FAQ questions, <p> for prose, <ul>/<li> for lists, <blockquote> for editorial callouts and <strong> for labels. Keep each subsection focused and concise.
 - Naturally incorporate these semantic entities: Precipitation, Shoulder Season, Peak Tourist Density, Accommodation Cost Surges, Neighborhoods, Culinary, Museum Passes and Transit Logistics.
 - Never use placeholders. Always name real ${city} places, routes, dishes and institutions.
 
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: 'Return only clean semantic HTML for a premium destination guide. Do not use Markdown code fences.' }] },
         contents: [{ role: 'user', parts: [{ text: buildPrompt(city.trim()) }] }],
-        generationConfig: { temperature: 0.55, maxOutputTokens: 16000 },
+        generationConfig: { temperature: 0.4, maxOutputTokens: 7500 },
       }),
     });
 
